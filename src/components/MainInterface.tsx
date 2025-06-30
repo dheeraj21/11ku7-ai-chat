@@ -658,6 +658,16 @@ Type any message, use commands, or attach files to start interacting!`;
                 Custom System Prompt: ON
               </div>
             )}
+            {/* Built with Bolt.new badge */}
+            <a
+              href="https://bolt.new/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-green-400 text-xs font-mono transition-colors duration-200 hidden sm:block" // Hidden on small screens
+              title="Built with Bolt.new"
+            >
+              Built with Bolt.new
+            </a>
           </div>
           
           <div className="flex items-center space-x-2">
