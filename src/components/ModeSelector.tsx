@@ -71,6 +71,16 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ currentMode, onModeChange }
           <div className="text-gray-500">
             11ku7 AI Chat v1.0.0
           </div>
+          {/* Built with Bolt.new badge - NEW POSITION */}
+          <a
+            href="https://bolt.new/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-500 hover:text-green-400 text-[10px] font-mono transition-colors duration-200 mt-1 inline-block"
+            title="Built with Bolt.new"
+          >
+            Built with Bolt.new
+          </a>
         </div>
       </div>
     </div>
