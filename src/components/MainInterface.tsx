@@ -647,14 +647,14 @@ Type any message, use commands, or attach files to start interacting!`;
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black p-4">
       <div className="max-w-7xl mx-auto h-screen flex flex-col space-y-4">
         {/* Header */}
-        <div className="bg-black/40 backdrop-blur-sm border border-green-500/20 rounded-lg p-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-black/40 backdrop-blur-sm border border-green-500/20 rounded-lg p-3 sm:p-4 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-4">
             <h1 className="text-green-400 font-mono text-xl font-bold">11ku7 AI Chat</h1>
-            <div className="text-gray-400 font-mono text-sm">
+            <div className="text-gray-400 font-mono text-sm hidden sm:block"> {/* Hide on smaller screens */}
               Connected to {initialState.provider} ({initialState.model})
             </div>
             {systemPromptEnabled && (
-              <div className="text-green-400 font-mono text-xs bg-green-500/10 px-2 py-1 rounded border border-green-500/20">
+              <div className="text-green-400 font-mono text-xs bg-green-500/10 px-2 py-1 rounded border border-green-500/20 hidden sm:block"> {/* Hide on smaller screens */}
                 Custom System Prompt: ON
               </div>
             )}
@@ -700,11 +700,11 @@ Type any message, use commands, or attach files to start interacting!`;
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-0">
           {/* Left Sidebar - Mode Selector and System Prompt */}
-          <div className="col-span-3 flex flex-col space-y-4 min-h-0">
+          <div className="col-span-12 md:col-span-3 flex flex-col space-y-4 min-h-0">
             {/* Mode Selector - Fixed height */}
-            <div className="h-80">
+            <div className="h-auto md:h-80">
               <ModeSelector
                 currentMode={currentMode}
                 onModeChange={setCurrentMode}
@@ -725,7 +725,7 @@ Type any message, use commands, or attach files to start interacting!`;
           </div>
 
           {/* Right Side - Chat Area and Input */}
-          <div className="col-span-9 flex flex-col space-y-4 min-h-0">
+          <div className="col-span-12 md:col-span-9 flex flex-col space-y-4 min-h-0">
             {/* Chat Area */}
             <div className="flex-1 min-h-0">
               <ChatArea

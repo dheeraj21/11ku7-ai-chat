@@ -169,10 +169,12 @@ const InputArea: React.FC<InputAreaProps> = ({
     setAttachments([]);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+  // handleKeyPress will only apply to the single-line input field.
+  // The multiline textarea will handle newlines natively.
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent default form submission
+      handleSubmit(e); // Submit the message
     }
   };
 
@@ -306,8 +308,7 @@ const InputArea: React.FC<InputAreaProps> = ({
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message or command (e.g., /help)... Press Shift+Enter for new line, Enter to send"
+                placeholder="Type your message or command... Press Enter for a new line, use Send button to send"
                 className="w-full h-full p-3 bg-gray-900/50 border border-gray-700 focus:border-green-500 rounded-lg text-green-400 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50 resize-none"
                 disabled={isTyping || processingFiles.size > 0}
               />
@@ -318,7 +319,7 @@ const InputArea: React.FC<InputAreaProps> = ({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message or command (e.g., /help)..."
+                placeholder="Type your message or command (e.g., /help)... Press Enter to send"
                 className="w-full h-full p-3 bg-gray-900/50 border border-gray-700 focus:border-green-500 rounded-lg text-green-400 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-green-500/50"
                 disabled={isTyping || processingFiles.size > 0}
               />

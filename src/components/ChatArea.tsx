@@ -90,7 +90,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages, isTyping, onCopyCode }) =
         {/* User Message */}
         {isUser && (
           <div className="flex justify-end">
-            <div className="max-w-[80%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3">
+            <div className="max-w-[90%] sm:max-w-[80%] bg-blue-600 text-white rounded-2xl rounded-br-lg md:rounded-br-md px-4 py-3">
               {/* Show attachments for user messages */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className="mb-3 space-y-3">
@@ -130,7 +130,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages, isTyping, onCopyCode }) =
                           <div className="text-xs text-blue-200 font-mono">
                             PDF Pages ({attachment.documentPages.length} pages converted to images):
                           </div>
-                          <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                             {attachment.documentPages.map((page) => {
                               const pageId = `${attachment.id}-page-${page.pageNumber}`;
                               const isExpanded = expandedPages.has(pageId);
@@ -190,7 +190,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages, isTyping, onCopyCode }) =
         {/* AI/System Message */}
         {!isUser && (
           <div className="flex justify-start">
-            <div className="max-w-[85%]">
+            <div className="max-w-[95%] sm:max-w-[85%]">
               {/* Avatar and Name */}
               <div className="flex items-center space-x-2 mb-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -211,7 +211,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages, isTyping, onCopyCode }) =
               </div>
 
               {/* Message Bubble */}
-              <div className={`rounded-2xl rounded-tl-md px-4 py-3 ${
+              <div className={`rounded-2xl rounded-tl-lg md:rounded-tl-md px-4 py-3 ${
                 isSystem
                   ? 'bg-yellow-500/10 border border-yellow-500/20'
                   : 'bg-gray-800/80 border border-gray-700'

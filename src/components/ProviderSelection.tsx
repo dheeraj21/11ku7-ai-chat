@@ -33,7 +33,8 @@ const openAIProviders: OpenAIProvider[] = [
     name: 'Ollama',
     baseURL: 'http://localhost:11434/v1',
     description: 'Local Ollama instance (no API key required)',
-    requiresApiKey: false
+    requiresApiKey: false,
+    fetchModels: true // ADDED: Indicate that Ollama models should be fetched
   },
   {
     name: 'Custom Provider',
@@ -74,22 +75,47 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
     }
   };
 
-  const handleOpenAIProviderSelect = (provider: OpenAIProvider) => {
+  const handleOpenAIProviderSelect = async (provider: OpenAIProvider) => {
     setSelectedOpenAIProvider(provider);
     setShowProviderDropdown(false);
+    setError(''); // Clear error
+    
+    setBaseURL(provider.baseURL); // Sets the base URL for chat requests (e.g., http://localhost:11434/v1 for Ollama)
     
     if (provider.isCustom) {
-      // For custom provider, go to custom URL step
-      setStep('custom-url');
+      setStep('custom-url'); // Custom providers still need URL input
     } else {
-      setBaseURL(provider.baseURL);
+      setIsLoading(true); 
       
-      // Skip API key step for Ollama since it doesn't require one
-      if (!provider.requiresApiKey) {
+      if (provider.name === 'Ollama') { 
         setApiKey('ollama-local'); // Set a placeholder value for Ollama
-        setStep('model');
+        try {
+          // MODIFIED: Fetch Ollama models from the /api/tags endpoint
+          const response = await fetch(`http://localhost:11434/api/tags`); 
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}. Please ensure Ollama server is running at ${provider.baseURL.replace('/v1', '')}.`);
+          }
+          const data = await response.json();
+          if (!data.models || !Array.isArray(data.models)) {
+            throw new Error('Invalid response format from Ollama API.');
+          }
+          const models = data.models.map((model: any) => model.name);
+          if (models.length === 0) {
+            throw new Error('No models found on Ollama server. Please download models (e.g., `ollama pull llama2`).');
+          }
+          setAvailableModels(models);
+          setStep('model'); // Go directly to model selection after fetching
+        } catch (error: any) {
+          setError(`Failed to connect to Ollama: ${error.message}`);
+          setSelectedOpenAIProvider(null); // Revert selection
+          setStep('openai-provider'); // Stay on this step
+        } finally {
+          setIsLoading(false);
+        }
       } else {
+        // For other providers requiring API key, go to API key step
         setStep('apikey');
+        setIsLoading(false); // Stop loading before showing API key input
       }
     }
   };
@@ -106,13 +132,7 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
   };
 
   const handleApiKeySubmit = async () => {
-    // Skip API key validation for Ollama
-    if (selectedOpenAIProvider?.name === 'Ollama') {
-      setApiKey('ollama-local');
-      setStep('model');
-      return;
-    }
-    
+    // This check is still valid for all providers that require an API key
     if (!apiKey.trim()) {
       setError('Please enter a valid API key');
       return;
@@ -121,9 +141,9 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
     setError('');
     setIsLoading(true);
     
+    // Gemini model fetching
     if (selectedProvider === 'Gemini') {
       try {
-        // Fetch Gemini models using the same endpoint as in your code
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         
         if (!response.ok) {
@@ -152,7 +172,9 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
       } finally {
         setIsLoading(false);
       }
-    } else if (selectedProvider === 'OpenAI' && selectedOpenAIProvider?.fetchModels) {
+    } 
+    // MODIFIED: Only fetch for official OpenAI if it has fetchModels
+    else if (selectedProvider === 'OpenAI' && selectedOpenAIProvider?.name === 'OpenAI' && selectedOpenAIProvider?.fetchModels) {
       // Fetch OpenAI models
       try {
         const response = await fetch(`${baseURL}/models`, {
@@ -204,7 +226,7 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
         setIsLoading(false);
       }
     } else {
-      // For other OpenAI Compatible providers, go directly to model step
+      // For OpenRouter, Custom Provider, or Ollama (which fetched earlier), directly proceed to model step
       setIsLoading(false);
       setStep('model');
     }
@@ -245,10 +267,12 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
       }
       setApiKey('');
     } else if (step === 'model') {
-      if (selectedProvider === 'Gemini' || (selectedProvider === 'OpenAI' && selectedOpenAIProvider?.fetchModels)) {
+      // MODIFIED: Go back to API key step if Gemini or official OpenAI/Ollama fetched models
+      if (selectedProvider === 'Gemini' || (selectedProvider === 'OpenAI' && (selectedOpenAIProvider?.fetchModels || selectedOpenAIProvider?.name === 'Ollama'))) {
         setStep('apikey');
-        setAvailableModels([]);
+        setAvailableModels([]); // Clear models when going back
       } else {
+        // For other OpenAI compatible providers that don't auto-fetch models
         setStep('apikey');
       }
       setSelectedModel('');
@@ -406,12 +430,25 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
 
               <div className="flex space-x-2">
                 <button
-                  onClick={() => selectedOpenAIProvider && (selectedOpenAIProvider.isCustom ? setStep('custom-url') : (selectedOpenAIProvider.requiresApiKey ? setStep('apikey') : setStep('model')))}
-                  disabled={!selectedOpenAIProvider}
+                  onClick={() => { 
+                    if (selectedOpenAIProvider) {
+                      handleOpenAIProviderSelect(selectedOpenAIProvider);
+                    }
+                  }}
+                  disabled={!selectedOpenAIProvider || isLoading} 
                   className="flex-1 p-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 font-mono text-sm"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Continue</span>
+                  {isLoading ? ( 
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Continue</span>
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={goBack}
@@ -485,10 +522,10 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
               {selectedOpenAIProvider && (
                 <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4">
                   <div className="text-blue-400 font-mono text-xs">
-                    Provider: {selectedOpenAIProvider.name}
+                        Provider: {selectedOpenAIProvider.name}
                   </div>
                   <div className="text-gray-400 text-xs mt-1">
-                    {selectedOpenAIProvider.isCustom ? customBaseURL : selectedOpenAIProvider.baseURL}
+                        {selectedOpenAIProvider.isCustom ? customBaseURL : selectedOpenAIProvider.baseURL}
                   </div>
                   {selectedOpenAIProvider.fetchModels && (
                     <div className="text-green-400 text-xs mt-1 font-semibold">
@@ -518,8 +555,9 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                       <span>
-                        {selectedProvider === 'Gemini' ? 'Fetching Models...' : 
-                         selectedOpenAIProvider?.fetchModels ? 'Fetching Models...' : 'Validating...'}
+                        {/* MODIFIED: Updated text for fetching models based on provider */}
+                        {selectedProvider === 'Gemini' || (selectedOpenAIProvider?.name === 'OpenAI' && selectedOpenAIProvider?.fetchModels)
+                          ? 'Fetching Models...' : 'Validating...'}
                       </span>
                     </>
                   ) : (
@@ -543,10 +581,10 @@ const ProviderSelection: React.FC<ProviderSelectionProps> = ({ onProviderSelect 
           {step === 'model' && (
             <div className="space-y-3">
               <p className="text-gray-300 font-mono text-sm mb-4">
-                {(selectedProvider === 'Gemini' || (selectedProvider === 'OpenAI' && selectedOpenAIProvider?.fetchModels)) ? 'Select Model:' : 'Enter Model Name:'}
+                {(selectedProvider === 'Gemini' || (selectedOpenAIProvider?.name === 'OpenAI' && selectedOpenAIProvider?.fetchModels) || selectedOpenAIProvider?.name === 'Ollama') ? 'Select Model:' : 'Enter Model Name:'}
               </p>
               
-              {(selectedProvider === 'Gemini' || (selectedProvider === 'OpenAI' && selectedOpenAIProvider?.fetchModels)) ? (
+              {(selectedProvider === 'Gemini' || (selectedOpenAIProvider?.name === 'OpenAI' && selectedOpenAIProvider?.fetchModels) || selectedOpenAIProvider?.name === 'Ollama') ? ( // MODIFIED: Added Ollama to auto-fetch list
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {availableModels.map((model) => (
                     <button
